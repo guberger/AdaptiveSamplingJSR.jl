@@ -3,32 +3,33 @@ struct Transition
     y::Vector{Float64}
 end
 
-function jsr_quadratic_white_box(N, A_list,
+function jsr_quadratic_white_box(N, A_list, C,
                                  γ_min, γ_max, solver;
                                  max_val=1e5, ϵ=1e-3, out=true)
-    return jsr_quadratic(N, (), A_list, γ_min, γ_max, solver,
+    return jsr_quadratic(N, (), A_list, C, γ_min, γ_max, solver,
                          max_val=max_val, ϵ=ϵ, out=out)
 end
 
-function jsr_quadratic_data_driven(N, trans_list,
+function jsr_quadratic_data_driven(N, trans_list, C,
                                    γ_min, γ_max, solver;
                                    max_val=1e5, ϵ=1e-5, out=true, sdp=false)
-    return jsr_quadratic(N, trans_list, (), γ_min, γ_max, solver,
+    return jsr_quadratic(N, trans_list, (), C, γ_min, γ_max, solver,
                          max_val=max_val, ϵ=ϵ, out=out, sdp=sdp)
 end
 
-function jsr_quadratic(N, trans_list, A_list,
+function jsr_quadratic(N, trans_list, A_list, C,
                        γ_min, γ_max, solver;
                        max_val=1e5, ϵ=1e-3, out=true, sdp=true)
     γ_up = γ_max
     γ_lo = γ_min
     γ_opt = 0.0
     P_opt = Matrix{Float64}(I, N, N)
+    @assert C ≥ 1
 
     while γ_up - γ_lo > ϵ
         γ = (γ_up + γ_lo)/2
         out && @printf("%f - [%f, %f]: ", γ, γ_lo, γ_up)
-        P, flag = stability_quadratic(N, trans_list, A_list,
+        P, flag = stability_quadratic(N, trans_list, A_list, C,
                                       γ, max_val, solver, sdp=sdp)
 
         if flag
@@ -46,7 +47,7 @@ function jsr_quadratic(N, trans_list, A_list,
     return γ_opt, P_opt
 end
 
-function stability_quadratic(N, trans_list, A_list,
+function stability_quadratic(N, trans_list, A_list, C,
                              γ, max_val, solver; sdp=true)
     γ2 = γ^2
     model = solver()
@@ -55,6 +56,7 @@ function stability_quadratic(N, trans_list, A_list,
 
     if sdp
         @constraint(model, P - I in PSDCone())
+        @constraint(model, C*I - P in PSDCone())
     end    
 
     for trans in trans_list
@@ -64,6 +66,8 @@ function stability_quadratic(N, trans_list, A_list,
         if !sdp
             @constraint(model, px ≥ norm(x)^2)
             @constraint(model, py ≥ norm(y)^2)
+            @constraint(model, px ≤ C * norm(x)^2)
+            @constraint(model, py ≤ C * norm(y)^2)
         end
         @constraint(model, py ≤ γ2 * px)
     end

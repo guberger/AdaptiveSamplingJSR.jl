@@ -1,3 +1,5 @@
 include("test_greet.jl")
-include("test_jsr.jl")
+include("test_lyapunov.jl")
+include("test_spherical.jl")
+include("test_scenario.jl")
 include("test_process.jl")
