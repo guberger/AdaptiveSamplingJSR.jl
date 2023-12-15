@@ -56,7 +56,7 @@ function stability_quadratic(N, trans_list, A_list, C,
 
     if sdp
         @constraint(model, P - I in PSDCone())
-        @constraint(model, C*I - P in PSDCone())
+        @constraint(model, C * I - P in PSDCone())
     end    
 
     for trans in trans_list
