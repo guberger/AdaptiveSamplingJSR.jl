@@ -82,7 +82,7 @@ function stability_quadratic(N, trans_list, A_list, C,
 
     if primal_status(model) == FEASIBLE_POINT
         return value.(P), true
-    elseif termination_status(model) == INFEASIBLE
+    elseif true || termination_status(model) == INFEASIBLE
         return Matrix{Float64}(I, N, N), false
     else
         println(solution_summary(model))
